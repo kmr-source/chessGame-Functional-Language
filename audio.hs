@@ -11,6 +11,9 @@ import Text.Printf
 outputFilePath:: FilePath
 outputFilePath = "output.bin"
 
+outputFileScale:: FilePath
+outputFileScale = "scale.bin"
+
 type Pulse = Float
 type Seconds = Float
 type Samples = Float
@@ -46,9 +49,24 @@ wave :: [Pulse]
 --wave = concat [freq (pitchStandard + i * 100.0) duration | i<-[0..10]]
 --     where 
 --         duration = 1.0
+
 wave = concat [note i duration | i<-[0..10]]
      where 
          duration = 1.0
+
+--- SCALE 
+wave2 :: [Pulse]
+wave2  = concat [note 0 duration
+                , note 2 duration
+                , note 4 duration
+                , note 5 duration
+                , note 7 duration
+                , note 9 duration
+                , note 11 duration
+                , note 12 duration
+                ]
+         where
+              duration = 0.5
 
 -- sin x = 0<=x<=2*pi
 
@@ -57,11 +75,20 @@ wave = concat [note i duration | i<-[0..10]]
 save :: FilePath -> IO ()
 save filePath = B.writeFile filePath $ B.toLazyByteString $ fold $ map B.floatLE wave 
 
+save2 :: FilePath ->IO()
+save2 filePath = B.writeFile filePath $ B.toLazyByteString $ fold $ map B.floatLE wave2
+
+
 -- <- means ignoring result 
 play:: IO ()
 play = do
   save outputFilePath
   _ <- runCommand $ printf "ffplay -showmode 1 -f f32le -ar %f %s" sampleRate outputFilePath
+  return()
+play2 :: IO()
+play2 = do   
+  save2 outputFileScale
+  _ <- runCommand $ printf "ffplay -showmode 1 -f f32le -ar %f %s" sampleRate outputFileScale
   return()
   
 -- can use Haskell as a shell script language 

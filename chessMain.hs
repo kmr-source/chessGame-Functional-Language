@@ -55,19 +55,77 @@ checkKing (Initiate ((h:t):tail)) c
 -- White pawns
 checkViableMoves (Initiate board) _ (Create Pawn 0) 7 x = []
 checkViableMoves (Initiate board) _ (Create Pawn 0) y x = 
-    if (board!!y!!x==Empty )
+    if (board!!(y+1)!!x==Empty )
     then
-        (y+1,x):(checkPawnWhite (Initiate board) (Create Pawn 0) y x)
+        (y+1,x):(checkPawnWhite (Initiate board) y x)
     else 
-        []
-checkPawnWhite (Initiate board) (Create Pawn 0) y x 
+        (checkPawnWhite (Initiate board) y x)
+-- Black pawns
+checkViableMoves (Initiate board) _ (Create Pawn 1) 0 x = []
+checkViableMoves (Initiate board) _ (Create Pawn 1) y x = 
+    if (board!!(y-1)!!x==Empty )
+    then
+        (y-1,x):(checkPawnBlack (Initiate board) y x)
+    else 
+        (checkPawnBlack (Initiate board) y x)
+-- Knight 
+checkViableMoves (Initiate board) _ (Create Knight c) y x =
+    mapAccountForFriendly y x knightMoves (Initiate board) c
+-- King
+checkViableMoves (Initiate board) _ (Create King c) y x =
+    mapAccountForFriendly y x kingMoves (Initiate board) c
+-- Bishop
+checkViableMoves (Initiate board) _ (Create Bishop c) y x =
+    moveCollision y x initial bishopMoves (Create Bishop c)
+-- Rook
+checkViableMoves (Initiate board) _ (Create Rook c) y x =
+    moveCollision y x initial rookMoves (Create Rook c)
+-- Queen
+checkViableMoves (Initiate board) _ (Create Queen c) y x =
+    moveCollision y x initial queenMoves (Create Queen c)
+--checkViableMoves (Initiate board) _ (Create Knight 1) y x = filter (\(y,x) -> (getColor (board!!y!!x)) /= 0) 
+checkViableMoves _ _ _ _ _ =  [(x,y) | x <- [0..7], y <- [0..7]] -- TEMP, REMOVE WHEN DONE, THIS ALLOWS THE REMAINING PIECES TO MOVE HOWEVER
+-- HELPER FUNCTIONS
+-- White pawn
+checkPawnWhite (Initiate board) y x 
     | x == 0 = if (getColor (board!!(y+1)!!(x+1))==1 ) then [(y+1,x+1)] else [] -- if its at the edge of the board
     | x == 7 = if (getColor (board!!(y+1)!!(x-1))==1 ) then [(y+1,x-1)] else [] -- also edge of board
-    | (getColor (board!!(y+1)!!(x-1))==1 && getColor (board!!(y+1)!!(x-1))==1) = [(y+1,x-1),(y+1,x-1)] 
+    | (getColor (board!!(y+1)!!(x-1))==1 && getColor (board!!(y+1)!!(x+1))==1) = [(y+1,x-1),(y+1,x+1)] 
     | getColor (board!!(y+1)!!(x-1))==1 = [(y+1,x-1)]
     | getColor (board!!(y+1)!!(x+1))==1 = [(y+1,x+1)]
     | otherwise = []
 -- Black pawn
+checkPawnBlack (Initiate board) y x 
+    | x == 0 = if (getColor (board!!(y-1)!!(x+1))==0 ) then [(y-1,x+1)] else [] -- if its at the edge of the board
+    | x == 7 = if (getColor (board!!(y-1)!!(x-1))==0 ) then [(y-1,x-1)] else [] -- also edge of board
+    | (getColor (board!!(y-1)!!(x-1))==0 && getColor (board!!(y-1)!!(x+1))==0) = [(y-1,x-1),(y-1,x+1)] 
+    | getColor (board!!(y-1)!!(x-1))==0 = [(y-1,x-1)]
+    | getColor (board!!(y-1)!!(x+1))==0 = [(y-1,x+1)]
+    | otherwise = []
+-- Knight
+knightMoves :: [(Int,Int)]
+knightMoves = [(2,1),(2,-1),(-2,1),(-2,-1),(-1,2),(-1,-2),(1,-2),(1,2)]
+kingMoves :: [(Int,Int)]
+kingMoves = delete (0,0) [(x,y)|x <- [-1..1], y <- [-1..1]] -- all combinations of a 3x3 except for staying still
+bishopMoves :: [(Int,Int)]
+bishopMoves = [(x,y)|x <- [-1,1], y <- [-1,1]]
+rookMoves :: [(Int,Int)]
+rookMoves = [(1,0),(-1,0),(0,1),(0,-1)]
+queenMoves :: [(Int,Int)]
+queenMoves = bishopMoves++rookMoves
+-- HELPER FOR ALL PIECES
+addCoords y x (y1,x1) = (y1+y,x1+x)
+removeBounds (y,x) = if (y < 0 || x < 0 || y > 7 || x > 7) then False else True
+mapMoves y x moves = filter removeBounds (nub(map (addCoords y x) moves))   
+mapAccountForFriendly y x moves (Initiate board) c = filter (\(y,x) -> getColor(board!!(y)!!(x))/= c) (mapMoves y x moves)
+-- y x is coordinate of unit, (y0,x0) is the movement (1,0) is up, (0,1) is right, returns a list of moves
+-- recursively checks the direction until you hit a piece/border
+checkCollision y x (Initiate board) c (y0,x0) 
+    | (y <= 0 || x <= 0 || y >= 7 || x >= 7) = []
+    | (getColor (board!!(y+y0)!!(x+x0)))== c = []
+    | (getColor (board!!(y+y0)!!(x+x0)))== 3 = (y0+y,x0+x):checkCollision (y+y0) (x+x0) (Initiate board) c (y0,x0)
+    | otherwise = [(y0+y,x0+x)]
+moveCollision y x (Initiate board) moves (Create _ c) = nub (concat(map (checkCollision y x (Initiate board) c) moves ))
 -- Main game (for white player)
 play (Initiate board) 0 = 
     do
@@ -78,17 +136,17 @@ play (Initiate board) 0 =
           putStrLn "Not a valid piece, must be of form 'a1' and be a white piece"
           play (Initiate board) 0
       else do
-          let char = extractChar ans --Will be represented by 0-7
-          let num = extractNum ans --Will be represented by 0-7
-          if (char >=0 && char <= 7 && num >=0 && num <= 7 && board!!num!!char /= Empty && getColor(board!!num!!char) /= 1) 
+          let x = extractChar ans --Will be represented by 0-7
+          let y = extractNum ans --Will be represented by 0-7
+          if (x >=0 && x <= 7 && y >=0 && y <= 7 && board!!y!!x /= Empty && getColor(board!!y!!x) /= 1 ) 
             then do 
                 putStrLn "Enter Player 1 movement location"
                 ans1 <- getLine
-                let char1 = extractChar ans1
-                let num1 = extractNum ans1
-                if (char1 >=0 && char1 <= 7 && num1 >=0 && num1 <= 7) 
+                let x1 = extractChar ans1
+                let y1 = extractNum ans1
+                if (x1 >=0 && x1 <= 7 && y1 >=0 && y1 <= 7 ) 
                     then do
-                        let nextTurn = Initiate(move board char num char1 num1)
+                        let nextTurn = Initiate(move board x y x1 y1)
                         if (checkKing nextTurn 1)
                         then
                             play (nextTurn) 1
@@ -110,17 +168,17 @@ play (Initiate board) 1 =
           putStrLn "Not a valid piece, must be of form 'a1' and be a black piece"
           play (Initiate board) 1
       else do 
-          let char = extractChar ans --Will be represented by 0-7
-          let num = extractNum ans --Will be represented by 0-7
-          if (char >=0 && char <= 7 && num >=0 && num <= 7 && board!!num!!char /= Empty && getColor(board!!num!!char) /= 0)
+          let x = extractChar ans --Will be represented by 0-7
+          let y = extractNum ans --Will be represented by 0-7
+          if (x >=0 && x <= 7 && y >=0 && y <= 7 && board!!y!!x /= Empty && getColor(board!!y!!x) /= 0)
             then do 
                 putStrLn "Enter Player 2 movement location"
                 ans1 <- getLine
-                let char1 = extractChar ans1
-                let num1 = extractNum ans1
-                if (char1 >=0 && char1 <= 7 && num1 >=0 && num1 <= 7) 
+                let x1 = extractChar ans1
+                let y1 = extractNum ans1
+                if (x1 >=0 && x1 <= 7 && y1 >=0 && y1 <= 7) 
                     then do
-                        let nextTurn = Initiate(move board char num char1 num1 )
+                        let nextTurn = Initiate(move board x y x1 y1 )
                         if (checkKing nextTurn 0)
                         then
                             play (nextTurn) 0

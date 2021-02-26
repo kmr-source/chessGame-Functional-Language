@@ -85,7 +85,6 @@ checkViableMoves (Initiate board) _ (Create Rook c) y x =
 -- Queen
 checkViableMoves (Initiate board) _ (Create Queen c) y x =
     moveCollision y x initial queenMoves (Create Queen c)
-checkViableMoves _ _ _ _ _ =  [(x,y) | x <- [0..7], y <- [0..7]] -- TEMP, REMOVE WHEN DONE, THIS ALLOWS THE REMAINING PIECES TO MOVE HOWEVER
 -- HELPER FUNCTIONS
 -- White pawn
 checkPawnWhite (Initiate board) y x 
@@ -156,7 +155,8 @@ play (Initiate board) 0 =
                         else 
                             return "White Wins"
                     else do
-                        putStrLn "Invalid Move"
+                        putStrLn "Invalid Move, valid moves are :"
+                        putStrLn (show (nub(checkViableMoves (Initiate board) [] (board!!(y)!!(x)) y x)))
                         play (Initiate board) 0
             else do
                 putStrLn "Not a valid piece, must be of form 'a1' and be a white piece"
@@ -179,7 +179,7 @@ play (Initiate board) 1 =
                 ans1 <- getLine
                 let x1 = extractChar ans1
                 let y1 = extractNum ans1
-                if (x1 >=0 && x1 <= 7 && y1 >=0 && y1 <= 7) 
+                if (x1 >=0 && x1 <= 7 && y1 >=0 && y1 <= 7 && (existsIn y x y1 x1 (Initiate board))) 
                     then do
                         let nextTurn = Initiate(move board x y x1 y1 )
                         if (checkKing nextTurn 0)
@@ -188,7 +188,8 @@ play (Initiate board) 1 =
                         else 
                             return "Black Wins"
                     else do
-                        putStrLn "Invalid Move"
+                        putStrLn "Invalid Move, valid moves are :"
+                        putStrLn (show (nub(checkViableMoves (Initiate board) [] (board!!(y)!!(x)) y x)))
                         play (Initiate board) 1
             else do
                 putStrLn "Not a valid piece, must be of form 'a1' and be a black piece"

@@ -25,7 +25,7 @@ instance Show Board where
         show (h:t) ++ "\n" ++ show (Initiate tail)
     show (Initiate _) = ""
 
--- List of Pieces
+-- List of Pieces A-H, 1-8, top left is A1
 initial = Initiate [[Create Rook 0, Create Knight 0, Create Bishop 0, Create Queen 0, Create King 0, Create Bishop 0, Create Knight 0, Create Rook 0],
     [Create Pawn 0, Create Pawn 0, Create Pawn 0, Create Pawn 0, Create Pawn 0, Create Pawn 0, Create Pawn 0, Create Pawn 0],
     [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty],
@@ -44,34 +44,36 @@ move board x0 y0 x1 y1 = (moveto (moveto board Empty (y0, x0)) (board!!y0!!x0) (
 -- Processing input
 extractChar (h:t) = ord (toUpper h) - 65    -- Ensures that lowercase works too
 extractNum (h:m:t) = ord m -48 -1 -- Chess boards do 1 indexing, haskell lists do 0, so I converted to 0 in the code
--- Adding delete input
-fixdel (h:t) =
-    if notDone (h:t) >= 1
-        then fixdel (remove (h:t))
-            else (h:t)
-substring start end text = (take (end - start) (drop start text))
-notDone (h:t) 
-    | length (h:t) < 2 = 0
-    | substring 1 2 (h:t) == "\DEL" = 1
-    | otherwise = notDone t 
-remove (h:t)
-    | length (h:t) < 2 = (h:t)
-    | substring 1 2 (h:t) == "\DEL" = substring 2 (length (h:t)) (h:t)
-    | otherwise = h : remove (t)
 --Viable moves
-getColor (Create _ c) = c
+getColor Empty = 3
+getColor (Create a c) = c
 checkKing (Initiate [[]]) _ = False
 checkKing (Initiate ((h:t):tail)) c 
     | tail == [] = elem (Create King c) (h:t)
     | otherwise = elem (Create King c) (h:t) || checkKing (Initiate tail) c
-
+-- Restriction of movements of pieces
+-- White pawns
+checkViableMoves (Initiate board) _ (Create Pawn 0) 7 x = []
+checkViableMoves (Initiate board) _ (Create Pawn 0) y x = 
+    if (board!!y!!x==Empty )
+    then
+        (y+1,x):(checkPawnWhite (Initiate board) (Create Pawn 0) y x)
+    else 
+        []
+checkPawnWhite (Initiate board) (Create Pawn 0) y x 
+    | x == 0 = if (getColor (board!!(y+1)!!(x+1))==1 ) then [(y+1,x+1)] else [] -- if its at the edge of the board
+    | x == 7 = if (getColor (board!!(y+1)!!(x-1))==1 ) then [(y+1,x-1)] else [] -- also edge of board
+    | (getColor (board!!(y+1)!!(x-1))==1 && getColor (board!!(y+1)!!(x-1))==1) = [(y+1,x-1),(y+1,x-1)] 
+    | getColor (board!!(y+1)!!(x-1))==1 = [(y+1,x-1)]
+    | getColor (board!!(y+1)!!(x+1))==1 = [(y+1,x+1)]
+    | otherwise = []
+-- Black pawn
 -- Main game (for white player)
 play (Initiate board) 0 = 
     do
       putStrLn (show (Initiate board))
       putStrLn "Enter Player 1 Piece location"
-      lin <- getLine
-      let ans = fixdel lin
+      ans <- getLine
       if ((length ans) <2) then do
           putStrLn "Not a valid piece, must be of form 'a1' and be a white piece"
           play (Initiate board) 0
@@ -81,8 +83,7 @@ play (Initiate board) 0 =
           if (char >=0 && char <= 7 && num >=0 && num <= 7 && board!!num!!char /= Empty && getColor(board!!num!!char) /= 1) 
             then do 
                 putStrLn "Enter Player 1 movement location"
-                lin1 <- getLine
-                let ans1 = fixdel lin1
+                ans1 <- getLine
                 let char1 = extractChar ans1
                 let num1 = extractNum ans1
                 if (char1 >=0 && char1 <= 7 && num1 >=0 && num1 <= 7) 
@@ -104,8 +105,7 @@ play (Initiate board) 1 =
     do
       putStrLn (show (Initiate board))
       putStrLn "Enter Player 2 Piece location"
-      lin <- getLine
-      let ans = fixdel lin
+      ans <- getLine
       if ((length ans) <2) then do
           putStrLn "Not a valid piece, must be of form 'a1' and be a black piece"
           play (Initiate board) 1
@@ -115,8 +115,7 @@ play (Initiate board) 1 =
           if (char >=0 && char <= 7 && num >=0 && num <= 7 && board!!num!!char /= Empty && getColor(board!!num!!char) /= 0)
             then do 
                 putStrLn "Enter Player 2 movement location"
-                lin1 <- getLine
-                let ans1 = fixdel lin1
+                ans1 <- getLine
                 let char1 = extractChar ans1
                 let num1 = extractNum ans1
                 if (char1 >=0 && char1 <= 7 && num1 >=0 && num1 <= 7) 

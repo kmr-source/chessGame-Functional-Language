@@ -52,6 +52,8 @@ checkKing (Initiate ((h:t):tail)) c
     | tail == [] = elem (Create King c) (h:t)
     | otherwise = elem (Create King c) (h:t) || checkKing (Initiate tail) c
 -- Restriction of movements of pieces
+existsIn y x y0 x0(Initiate board) = elem (y0,x0) (checkViableMoves (Initiate board) [] (board!!(y)!!(x)) y x )
+
 -- White pawns
 checkViableMoves (Initiate board) _ (Create Pawn 0) 7 x = []
 checkViableMoves (Initiate board) _ (Create Pawn 0) y x = 
@@ -83,19 +85,20 @@ checkViableMoves (Initiate board) _ (Create Rook c) y x =
 -- Queen
 checkViableMoves (Initiate board) _ (Create Queen c) y x =
     moveCollision y x initial queenMoves (Create Queen c)
---checkViableMoves (Initiate board) _ (Create Knight 1) y x = filter (\(y,x) -> (getColor (board!!y!!x)) /= 0) 
 checkViableMoves _ _ _ _ _ =  [(x,y) | x <- [0..7], y <- [0..7]] -- TEMP, REMOVE WHEN DONE, THIS ALLOWS THE REMAINING PIECES TO MOVE HOWEVER
 -- HELPER FUNCTIONS
 -- White pawn
 checkPawnWhite (Initiate board) y x 
+    | (y == 1) = if (getColor (board!!(y+1)!!(x)) /= 3) then [] else if (getColor (board!!(y+2)!!(x)) == 3) then [(y+1,x),(y+2,x)] else [(y+1,x)] -- Starting move is 2 steps
     | x == 0 = if (getColor (board!!(y+1)!!(x+1))==1 ) then [(y+1,x+1)] else [] -- if its at the edge of the board
     | x == 7 = if (getColor (board!!(y+1)!!(x-1))==1 ) then [(y+1,x-1)] else [] -- also edge of board
-    | (getColor (board!!(y+1)!!(x-1))==1 && getColor (board!!(y+1)!!(x+1))==1) = [(y+1,x-1),(y+1,x+1)] 
+    | (getColor (board!!(y+1)!!(x-1))==1 && getColor (board!!(y+1)!!(x+1))==1) = [(y+1,x+1),(y+1,x+1)] 
     | getColor (board!!(y+1)!!(x-1))==1 = [(y+1,x-1)]
     | getColor (board!!(y+1)!!(x+1))==1 = [(y+1,x+1)]
     | otherwise = []
 -- Black pawn
 checkPawnBlack (Initiate board) y x 
+    | (y == 6) = if (getColor (board!!(y-1)!!(x)) /= 3) then [] else if (getColor (board!!(y-2)!!(x)) == 3) then [(y-1,x),(y-2,x)] else [(y-1,x)] -- Starting move is 2 steps
     | x == 0 = if (getColor (board!!(y-1)!!(x+1))==0 ) then [(y-1,x+1)] else [] -- if its at the edge of the board
     | x == 7 = if (getColor (board!!(y-1)!!(x-1))==0 ) then [(y-1,x-1)] else [] -- also edge of board
     | (getColor (board!!(y-1)!!(x-1))==0 && getColor (board!!(y-1)!!(x+1))==0) = [(y-1,x-1),(y-1,x+1)] 
@@ -105,7 +108,7 @@ checkPawnBlack (Initiate board) y x
 -- Knight
 knightMoves :: [(Int,Int)]
 knightMoves = [(2,1),(2,-1),(-2,1),(-2,-1),(-1,2),(-1,-2),(1,-2),(1,2)]
-kingMoves :: [(Int,Int)]
+kingMoves :: [(Int,Int)] 
 kingMoves = delete (0,0) [(x,y)|x <- [-1..1], y <- [-1..1]] -- all combinations of a 3x3 except for staying still
 bishopMoves :: [(Int,Int)]
 bishopMoves = [(x,y)|x <- [-1,1], y <- [-1,1]]
@@ -144,7 +147,7 @@ play (Initiate board) 0 =
                 ans1 <- getLine
                 let x1 = extractChar ans1
                 let y1 = extractNum ans1
-                if (x1 >=0 && x1 <= 7 && y1 >=0 && y1 <= 7 ) 
+                if (x1 >=0 && x1 <= 7 && y1 >=0 && y1 <= 7 && (existsIn y x y1 x1 (Initiate board))) 
                     then do
                         let nextTurn = Initiate(move board x y x1 y1)
                         if (checkKing nextTurn 1)

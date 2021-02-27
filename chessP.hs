@@ -1,20 +1,16 @@
 import Data.List
 import Data.Maybe
 import Data.Char --toUpper ord
+import Control.Concurrent 
 import Euterpea 
 
---http://hackage.haskell.org//base-4.12.0.0/docs/Control-Concurrent.html
--- credit: https://stackoverflow.com/questions/54865136/start-euterpea-music-in-main-function-together-with-gameworld-in-haskell
 
---main = do musicThreadId <- forkIO $ Euterpea.play $ Euterpea.line [af 4 dqn :=: cf 4 dqn :=: ef 4 dqn] 
+-- credit: https://stackoverflow.com/questions/54865136/start-euterpea-music-in-main-function-together-with-gameworld-in-haskell
+-- http://euterpea.com/
+-- credit: looked up api for library on https://hackage.haskell.org/package/Euterpea-2.0.3/docs/Euterpea-Music.html#t:Music
+---  Music made for the beginning of the Game --- called at (go function)
 melody :: Music Pitch
 melody = line [c 5 qn, g 5 qn, g 5 qn, c 5 qn, g 5 qn, g 4 hn, c 4 qn, g 5 qn, g 5 qn, c 3 qn, g 3 qn, g 5 hn]
-
-muscEnd :: Music Pitch
-muscEnd = line [e 5 qn, e 5 qn, e 5 qn, d 5 qn, c 5 qn, c 6 hn]
-
-moveMusic :: Music Pitch
-moveMusic =  line [ g 5 qn, c 5 qn]
 
 chords :: Music Pitch
 chords = chord [ c 3 wn, e 3 wn, g 3 wn] :+:
@@ -30,22 +26,45 @@ chords = chord [ c 3 wn, e 3 wn, g 3 wn] :+:
          chord [ c 3 hn, f 3 hn, a 3 hn] :+:
          chord [ c 3 hn, d 4 hn, e 3 hn]          
 
+startMusic :: Music Pitch
+startMusic = melody :=: chords
+
+--- Music made for the moves of the Game 
+moveCorrect :: Music Pitch
+moveCorrect = chord [ c 3 qn, e 4 qn, a 4 qn, d 4 qn]:+: line [ g 3 qn, c 3 qn]
+
+moveCorrectMusic = instrument VoiceOohs $ moveCorrect
+ 
+-- credit: Symphony No. 5 in C Minor, Op. 67: I. Allegro con brio Beethoven -- used beginning
+-- Fail move music  
+failMoveMusic :: Music Pitch
+failMoveMusic = chord[ g 2 sn, g 3 sn]:+:
+                chord[ g 2 sn, g 3 sn]:+:
+                chord[ g 2 sn, g 3 sn]:+:
+                chord[ ef 2 qn, ef 3 qn]
+
+--fail2 = instrument VoiceOohs $ failMoveMusic
+
+-- invalid Move Music parts 
+
+invalidTune :: Music Pitch
+invalidTune = line [ d 1 qn, d 1 sn, g 1 qn]
+invalidTuneMusic = instrument Trumpet $ invalidTune
+ 
+
+-- End Game music parts 
+endGameChord :: Music Pitch
+endGameChord = chord [ c 5 wn, e 5 wn, g 2 wn]
+
+midTune :: Music Pitch
+midTune = line [c 5 qn, c 5 qn, c 5 qn, c 5 qn, c 5 qn, c 4 hn, c 4 qn, c 5 qn, c 5 qn, c 3 qn, c 3 wn]
+
+
+muscEnd :: Music Pitch
+muscEnd = line [e 5 qn, e 5 qn, e 5 qn, d 5 qn, c 5 qn, c 6 hn]
+
 musicEnding :: Music Pitch
-musicEnding = muscEnd :=: chords
-twinkle :: Music Pitch
-twinkle = melody :=: chords :=: melody
-
-melody2 :: Music Pitch
-melody2 = Euterpea.line [af 5 dqn :=: cf 4 dqn]
-
-endGameMelody :: Music Pitch
-endGameMelody = chord [ e 5 wn, c 3 wn, d 3 wn, e 5 wn, c 5 en]
-
-musicBeginning :: Music Pitch
-musicBeginning = line [a 5 qn, b 5 qn, c 5 qn, a 5 qn, b 5 qn, c 4 hn, a 4 qn, e 5 qn, g 5 qn, b 3 qn, c 3 wn]
-
-
-
+musicEnding = muscEnd :=: endGameChord :=: midTune 
 
 -- Pieces
 data Kind = Pawn | Knight | Bishop | Rook | Queen | King
@@ -180,6 +199,8 @@ play2 (Initiate board) 0 =
       putStrLn "Enter Player 1 Piece location"
       ans <- getLine
       if ((length ans) <2) then do
+          play invalidTuneMusic
+          putStrLn " \n" 
           putStrLn "Not a valid piece, must be of form 'a1' and be a white piece"
           play2 (Initiate board) 0
       else do
@@ -196,16 +217,20 @@ play2 (Initiate board) 0 =
                         let nextTurn = Initiate(move board x y x1 y1)
                         if (checkKing nextTurn 1)
                         then do
-                            play moveMusic
+                            play moveCorrectMusic
                             play2 (nextTurn) 1
                         else do 
                             play musicEnding
                             return "White Wins"
                     else do
+                        play failMoveMusic
+                        putStrLn "\n"
                         putStrLn "Invalid Move, valid moves are :"
                         putStrLn (show (nub(checkViableMoves (Initiate board) [] (board!!(y)!!(x)) y x)))
                         play2 (Initiate board) 0
             else do
+                play invalidTuneMusic
+                putStrLn "\n"
                 putStrLn "Not a valid piece, must be of form 'a1' and be a white piece"
                 play2 (Initiate board) 0
 -- (Main game for black player)
@@ -215,6 +240,8 @@ play2 (Initiate board) 1 =
       putStrLn "Enter Player 2 Piece location"
       ans <- getLine
       if ((length ans) <2) then do
+          play invalidTuneMusic
+          putStrLn "\n"
           putStrLn "Not a valid piece, must be of form 'a1' and be a black piece"
           play2 (Initiate board) 1
       else do 
@@ -231,20 +258,25 @@ play2 (Initiate board) 1 =
                         let nextTurn = Initiate(move board x y x1 y1 )
                         if (checkKing nextTurn 0)
                         then do
-                            play moveMusic
+                            play moveCorrectMusic
                             play2 (nextTurn) 0
                         else do 
                             play musicEnding
                             return "Black Wins"
                     else do
+                        play failMoveMusic
+                        putStrLn "\n"
                         putStrLn "Invalid Move, valid moves are :"
                         putStrLn (show (nub(checkViableMoves (Initiate board) [] (board!!(y)!!(x)) y x)))
                         play2 (Initiate board) 1
             else do
+                play invalidTuneMusic
+                putStrLn "\n"
                 putStrLn "Not a valid piece, must be of form 'a1' and be a black piece"
                 play2 (Initiate board) 1
 go = do
-    play melody
+    play startMusic
+    putStrLn "\n"
     (play2 initial 0)
 
          

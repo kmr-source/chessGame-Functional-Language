@@ -1,7 +1,6 @@
 import Data.List
 import Data.Maybe
 import Data.Char --toUpper ord
-
 -- Pieces
 data Kind = Pawn | Knight | Bishop | Rook | Queen | King
             deriving (Eq,Ord,Show,Enum)
@@ -34,7 +33,14 @@ initial = Initiate [[Create Rook 0, Create Knight 0, Create Bishop 0, Create Que
     [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty],
     [Create Pawn 1, Create Pawn 1, Create Pawn 1, Create Pawn 1, Create Pawn 1, Create Pawn 1, Create Pawn 1, Create Pawn 1],
     [Create Rook 1, Create Knight 1, Create Bishop 1, Create Queen 1, Create King 1, Create Bishop 1, Create Knight 1, Create Rook 1]]
-
+notInitial = Initiate [[Create Rook 0, Create Knight 0, Create Bishop 0, Create Queen 0, Create King 0, Create Bishop 0, Create Knight 0, Create Rook 0],
+    [Empty, Create Pawn 0, Create Pawn 0, Create Pawn 0, Create Pawn 0, Create Pawn 0, Create Pawn 0, Create Pawn 0],
+    [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty],
+    [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty],
+    [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty],
+    [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty],
+    [Create Pawn 1, Create Pawn 1, Create Pawn 1, Create Pawn 1, Create Pawn 1, Create Pawn 1, Create Pawn 1, Create Pawn 1],
+    [Create Rook 1, Create Knight 1, Create Bishop 1, Create Queen 1, Create King 1, Create Bishop 1, Create Knight 1, Create Rook 1]]
 --Used https://stackoverflow.com/questions/20156078/replacing-an-element-in-a-list-of-lists-in-haskell
 moveto m x (r,c) = 
   take r m ++
@@ -78,13 +84,13 @@ checkViableMoves (Initiate board) _ (Create King c) y x =
     mapAccountForFriendly y x kingMoves (Initiate board) c
 -- Bishop
 checkViableMoves (Initiate board) _ (Create Bishop c) y x =
-    moveCollision y x initial bishopMoves (Create Bishop c)
+    moveCollision y x (Initiate board) bishopMoves (Create Bishop c)
 -- Rook
 checkViableMoves (Initiate board) _ (Create Rook c) y x =
-    moveCollision y x initial rookMoves (Create Rook c)
+    moveCollision y x (Initiate board) rookMoves (Create Rook c)
 -- Queen
 checkViableMoves (Initiate board) _ (Create Queen c) y x =
-    moveCollision y x initial queenMoves (Create Queen c)
+    moveCollision y x (Initiate board) queenMoves (Create Queen c)
 -- HELPER FUNCTIONS
 -- White pawn
 checkPawnWhite (Initiate board) y x 
@@ -110,7 +116,7 @@ knightMoves = [(2,1),(2,-1),(-2,1),(-2,-1),(-1,2),(-1,-2),(1,-2),(1,2)]
 kingMoves :: [(Int,Int)] 
 kingMoves = delete (0,0) [(x,y)|x <- [-1..1], y <- [-1..1]] -- all combinations of a 3x3 except for staying still
 bishopMoves :: [(Int,Int)]
-bishopMoves = [(x,y)|x <- [-1,1], y <- [-1,1]]
+bishopMoves = [(1,1),(1,-1),(-1,1),(-1,-1)]
 rookMoves :: [(Int,Int)]
 rookMoves = [(1,0),(-1,0),(0,1),(0,-1)]
 queenMoves :: [(Int,Int)]
@@ -123,20 +129,20 @@ mapAccountForFriendly y x moves (Initiate board) c = filter (\(y,x) -> getColor(
 -- y x is coordinate of unit, (y0,x0) is the movement (1,0) is up, (0,1) is right, returns a list of moves
 -- recursively checks the direction until you hit a piece/border
 checkCollision y x (Initiate board) c (y0,x0) 
-    | (y <= 0 || x <= 0 || y >= 7 || x >= 7) = []
+    | ((y+y0) < 0 || (x+x0) < 0 || (y+y0) > 7 || (x+x0) > 7) = []
     | (getColor (board!!(y+y0)!!(x+x0)))== c = []
     | (getColor (board!!(y+y0)!!(x+x0)))== 3 = (y0+y,x0+x):checkCollision (y+y0) (x+x0) (Initiate board) c (y0,x0)
     | otherwise = [(y0+y,x0+x)]
 moveCollision y x (Initiate board) moves (Create _ c) = nub (concat(map (checkCollision y x (Initiate board) c) moves ))
 -- Main game (for white player)
-play (Initiate board) 0 = 
+play2 (Initiate board) 0 = 
     do
       putStrLn (show (Initiate board))
       putStrLn "Enter Player 1 Piece location"
       ans <- getLine
       if ((length ans) <2) then do
           putStrLn "Not a valid piece, must be of form 'a1' and be a white piece"
-          play (Initiate board) 0
+          play2 (Initiate board) 0
       else do
           let x = extractChar ans --Will be represented by 0-7
           let y = extractNum ans --Will be represented by 0-7
@@ -151,25 +157,25 @@ play (Initiate board) 0 =
                         let nextTurn = Initiate(move board x y x1 y1)
                         if (checkKing nextTurn 1)
                         then
-                            play (nextTurn) 1
+                            play2 (nextTurn) 1
                         else 
                             return "White Wins"
                     else do
                         putStrLn "Invalid Move, valid moves are :"
                         putStrLn (show (nub(checkViableMoves (Initiate board) [] (board!!(y)!!(x)) y x)))
-                        play (Initiate board) 0
+                        play2 (Initiate board) 0
             else do
                 putStrLn "Not a valid piece, must be of form 'a1' and be a white piece"
-                play (Initiate board) 0
+                play2 (Initiate board) 0
 -- (Main game for black player)
-play (Initiate board) 1 = 
+play2 (Initiate board) 1 = 
     do
       putStrLn (show (Initiate board))
       putStrLn "Enter Player 2 Piece location"
       ans <- getLine
       if ((length ans) <2) then do
           putStrLn "Not a valid piece, must be of form 'a1' and be a black piece"
-          play (Initiate board) 1
+          play2 (Initiate board) 1
       else do 
           let x = extractChar ans --Will be represented by 0-7
           let y = extractNum ans --Will be represented by 0-7
@@ -184,14 +190,14 @@ play (Initiate board) 1 =
                         let nextTurn = Initiate(move board x y x1 y1 )
                         if (checkKing nextTurn 0)
                         then
-                            play (nextTurn) 0
+                            play2 (nextTurn) 0
                         else 
                             return "Black Wins"
                     else do
                         putStrLn "Invalid Move, valid moves are :"
                         putStrLn (show (nub(checkViableMoves (Initiate board) [] (board!!(y)!!(x)) y x)))
-                        play (Initiate board) 1
+                        play2 (Initiate board) 1
             else do
                 putStrLn "Not a valid piece, must be of form 'a1' and be a black piece"
-                play (Initiate board) 1
-go = (play initial 0)
+                play2 (Initiate board) 1
+go = (play2 initial 0)

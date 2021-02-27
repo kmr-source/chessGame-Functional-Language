@@ -1,7 +1,6 @@
 import Data.List
 import Data.Maybe
 import Data.Char --toUpper ord
-import Control.Concurrent 
 import Euterpea 
 
 --http://hackage.haskell.org//base-4.12.0.0/docs/Control-Concurrent.html
@@ -10,36 +9,29 @@ import Euterpea
 --main = do musicThreadId <- forkIO $ Euterpea.play $ Euterpea.line [af 4 dqn :=: cf 4 dqn :=: ef 4 dqn] 
 melody :: Music Pitch
 melody = line [c 5 qn, g 5 qn, g 5 qn, c 5 qn, g 5 qn, g 4 hn, c 4 qn, g 5 qn, g 5 qn, c 3 qn, g 3 qn, g 5 hn]
+
+muscEnd :: Music Pitch
+muscEnd = line [e 5 qn, e 5 qn, e 5 qn, d 5 qn, c 5 qn, c 6 hn]
+
+moveMusic :: Music Pitch
+moveMusic =  line [ g 5 qn, c 5 qn]
+
 chords :: Music Pitch
 chords = chord [ c 3 wn, e 3 wn, g 3 wn] :+:
          chord [ c 3 hn, f 3 hn, a 3 hn] :+:
          chord [ e 3 hn, g 4 hn, c 3 hn] :+:
-		 chord [ c 3 wn, e 3 wn, g 3 wn] :+:
+         chord [ c 3 wn, e 3 wn, g 3 wn] :+:
          chord [ c 3 hn, f 3 hn, a 3 hn] :+:
          chord [ c 3 hn, d 4 hn, e 3 hn] :+:
-		 chord [ c 3 wn, e 3 wn, g 3 wn] :+:
+         chord [ c 3 wn, e 3 wn, g 3 wn] :+:
          chord [ c 3 hn, f 3 hn, a 3 hn] :+:
          chord [ e 3 hn, g 4 hn, c 3 hn] :+:
-		 chord [ c 3 wn, e 3 wn, g 3 wn] :+:
+         chord [ c 3 wn, e 3 wn, g 3 wn] :+:
          chord [ c 3 hn, f 3 hn, a 3 hn] :+:
-         chord [ c 3 hn, d 4 hn, e 3 hn] :+:
-		 chord [ c 3 wn, e 3 wn, g 3 wn] :+:
-         chord [ c 3 hn, f 3 hn, a 3 hn] :+:
-         chord [ e 3 hn, g 4 hn, c 3 hn] :+:
-		 chord [ c 3 wn, e 3 wn, g 3 wn] :+:
-         chord [ c 3 hn, f 3 hn, a 3 hn] :+:
-         chord [ c 3 hn, d 4 hn, e 3 hn] :+:
-		 chord [ c 3 wn, e 3 wn, g 3 wn] :+:
-         chord [ c 3 hn, f 3 hn, a 3 hn] :+:
-         chord [ e 3 hn, g 4 hn, c 3 hn] :+:
-		 chord [ c 3 wn, e 3 wn, g 3 wn] :+:
-         chord [ c 3 hn, f 3 hn, a 3 hn] :+:
-         chord [ c 3 hn, d 4 hn, e 3 hn] :+:
-		 chord [ c 3 hn, f 3 hn, a 3 hn] :+:
-         chord [ e 3 hn, g 4 qn, c 3 hn] :+:
-		 chord [ c 3 wn, e 3 qn, g 3 wn] :+:
-         chord [ c 3 hn, f 3 qn, a 3 hn] :+:
-         chord [ c 3 qn, d 4 hn, e 3 wn]
+         chord [ c 3 hn, d 4 hn, e 3 hn]          
+
+musicEnding :: Music Pitch
+musicEnding = muscEnd :=: chords
 twinkle :: Music Pitch
 twinkle = melody :=: chords :=: melody
 
@@ -52,8 +44,7 @@ endGameMelody = chord [ e 5 wn, c 3 wn, d 3 wn, e 5 wn, c 5 en]
 musicBeginning :: Music Pitch
 musicBeginning = line [a 5 qn, b 5 qn, c 5 qn, a 5 qn, b 5 qn, c 4 hn, a 4 qn, e 5 qn, g 5 qn, b 3 qn, c 3 wn]
 
-muscEnd :: Music Pitch
-muscEnd = line [e 5 qn, e 5 qn, e 5 qn, d 5 qn, c 5 qn, c 6 hn]
+
 
 
 -- Pieces
@@ -61,12 +52,12 @@ data Kind = Pawn | Knight | Bishop | Rook | Queen | King
             deriving (Eq,Ord,Show,Enum)
 --                   Kind, Board Position, Board Position, Black/White (white = 0)
 data Piece = Empty 
-            | Create Kind Char Int Int
+            | Create Kind Int
             deriving (Eq,Ord)
             
 instance Show Piece where
     show Empty = show "   "
-    show (Create k _ _ c) = show (if (c==1) then images!!((fromEnum k)+6) else images!!(fromEnum k))
+    show (Create k c) = show (if (c==1) then images!!((fromEnum k)+6) else images!!(fromEnum k))
 
 -- Piece Images
 images = ["WP ","WN ","WB ","WR ","WQ ","WK ","BP ","BN ","BB ","BR ","BQ ","BK "] -- I am using WSL, doesn't support chess image unicode :(
@@ -79,122 +70,182 @@ instance Show Board where
         show (h:t) ++ "\n" ++ show (Initiate tail)
     show (Initiate _) = ""
 
--- List of Pieces
-initial = Initiate [[Create Rook 'A' 8 0, Create Knight 'B' 8 0, Create Bishop 'C' 0 0, Create Queen 'D' 8 0, Create King 'E' 8 0, Create Bishop 'F' 8 0, Create Knight 'G' 8 0, Create Rook 'H' 8 0],
-    [Create Pawn 'A' 7 0, Create Pawn 'B' 7 0, Create Pawn 'C' 7 0, Create Pawn 'D' 7 0, Create Pawn 'E' 7 0, Create Pawn 'F' 7 0, Create Pawn 'G' 7 0, Create Pawn 'H' 7 0],
+-- List of Pieces A-H, 1-8, top left is A1
+initial = Initiate [[Create Rook 0, Create Knight 0, Create Bishop 0, Create Queen 0, Create King 0, Create Bishop 0, Create Knight 0, Create Rook 0],
+    [Create Pawn 0, Create Pawn 0, Create Pawn 0, Create Pawn 0, Create Pawn 0, Create Pawn 0, Create Pawn 0, Create Pawn 0],
     [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty],
     [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty],
     [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty],
     [Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty],
-    [Create Pawn 'A' 2 1, Create Pawn 'B' 2 1, Create Pawn 'C' 2 1, Create Pawn 'D' 2 1, Create Pawn 'E' 2 1, Create Pawn 'F' 2 1, Create Pawn 'G' 2 1, Create Pawn 'H' 2 1],
-    [Create Rook 'A' 1 1, Create Knight 'B' 1 1, Create Bishop 'C' 1 1, Create Queen 'D' 1 1, Create King 'E' 1 1, Create Bishop 'F' 1 1, Create Knight 'G' 1 1, Create Rook 'H' 1 1]]
+    [Create Pawn 1, Create Pawn 1, Create Pawn 1, Create Pawn 1, Create Pawn 1, Create Pawn 1, Create Pawn 1, Create Pawn 1],
+    [Create Rook 1, Create Knight 1, Create Bishop 1, Create Queen 1, Create King 1, Create Bishop 1, Create Knight 1, Create Rook 1]]
 
 --Used https://stackoverflow.com/questions/20156078/replacing-an-element-in-a-list-of-lists-in-haskell
 moveto m x (r,c) = 
   take r m ++
   [take c (m !! r) ++ [x] ++ drop (c + 1) (m !! r)] ++
   drop (r + 1) m
-move board x0 y0 x1 y1 = (moveto (moveto board Empty (y0, x0)) (board!!y0!!x0) (y1,x1))
+move board x0 y0 x1 y1 = (moveto (moveto board Empty (y0, x0)) (board!!y0!!x0) (y1,x1)) -- Moves piece from (x0,y0) to (y0,y1)
 -- Processing input
 extractChar (h:t) = ord (toUpper h) - 65    -- Ensures that lowercase works too
 extractNum (h:m:t) = ord m -48 -1 -- Chess boards do 1 indexing, haskell lists do 0, so I converted to 0 in the code
--- Adding delete input
-fixdel (h:t) =
-    if notDone (h:t) >= 1
-        then fixdel (Main.remove (h:t))
-            else (h:t)
-substring start end text = (take (end - start) (drop start text))
-notDone (h:t) 
-    | length (h:t) < 2 = 0
-    | substring 1 2 (h:t) == "\DEL" = 1
-    | otherwise = notDone t 
-remove (h:t)
-    | length (h:t) < 2 = (h:t)
-    | substring 1 2 (h:t) == "\DEL" = substring 2 (length (h:t)) (h:t)
-    | otherwise = h : Main.remove (t)
-getColor (Create _ _ _ c) = c
+--Viable moves
+getColor Empty = 3
+getColor (Create a c) = c
+checkKing (Initiate [[]]) _ = False
+checkKing (Initiate ((h:t):tail)) c 
+    | tail == [] = elem (Create King c) (h:t)
+    | otherwise = elem (Create King c) (h:t) || checkKing (Initiate tail) c
+-- Restriction of movements of pieces
+existsIn y x y0 x0(Initiate board) = elem (y0,x0) (checkViableMoves (Initiate board) [] (board!!(y)!!(x)) y x )
+
+-- White pawns
+checkViableMoves (Initiate board) _ (Create Pawn 0) 7 x = []
+checkViableMoves (Initiate board) _ (Create Pawn 0) y x = 
+    if (board!!(y+1)!!x==Empty )
+    then
+        (y+1,x):(checkPawnWhite (Initiate board) y x)
+    else 
+        (checkPawnWhite (Initiate board) y x)
+-- Black pawns
+checkViableMoves (Initiate board) _ (Create Pawn 1) 0 x = []
+checkViableMoves (Initiate board) _ (Create Pawn 1) y x = 
+    if (board!!(y-1)!!x==Empty )
+    then
+        (y-1,x):(checkPawnBlack (Initiate board) y x)
+    else 
+        (checkPawnBlack (Initiate board) y x)
+-- Knight 
+checkViableMoves (Initiate board) _ (Create Knight c) y x =
+    mapAccountForFriendly y x knightMoves (Initiate board) c
+-- King
+checkViableMoves (Initiate board) _ (Create King c) y x =
+    mapAccountForFriendly y x kingMoves (Initiate board) c
+-- Bishop
+checkViableMoves (Initiate board) _ (Create Bishop c) y x =
+    moveCollision y x (Initiate board) bishopMoves (Create Bishop c)
+-- Rook
+checkViableMoves (Initiate board) _ (Create Rook c) y x =
+    moveCollision y x (Initiate board) rookMoves (Create Rook c)
+-- Queen
+checkViableMoves (Initiate board) _ (Create Queen c) y x =
+    moveCollision y x (Initiate board) queenMoves (Create Queen c)
+-- HELPER FUNCTIONS
+-- White pawn
+checkPawnWhite (Initiate board) y x 
+    | (y == 1) = if (getColor (board!!(y+1)!!(x)) /= 3) then [] else if (getColor (board!!(y+2)!!(x)) == 3) then [(y+1,x),(y+2,x)] else [(y+1,x)] -- Starting move is 2 steps
+    | x == 0 = if (getColor (board!!(y+1)!!(x+1))==1 ) then [(y+1,x+1)] else [] -- if its at the edge of the board
+    | x == 7 = if (getColor (board!!(y+1)!!(x-1))==1 ) then [(y+1,x-1)] else [] -- also edge of board
+    | (getColor (board!!(y+1)!!(x-1))==1 && getColor (board!!(y+1)!!(x+1))==1) = [(y+1,x+1),(y+1,x+1)] 
+    | getColor (board!!(y+1)!!(x-1))==1 = [(y+1,x-1)]
+    | getColor (board!!(y+1)!!(x+1))==1 = [(y+1,x+1)]
+    | otherwise = []
+-- Black pawn
+checkPawnBlack (Initiate board) y x 
+    | (y == 6) = if (getColor (board!!(y-1)!!(x)) /= 3) then [] else if (getColor (board!!(y-2)!!(x)) == 3) then [(y-1,x),(y-2,x)] else [(y-1,x)] -- Starting move is 2 steps
+    | x == 0 = if (getColor (board!!(y-1)!!(x+1))==0 ) then [(y-1,x+1)] else [] -- if its at the edge of the board
+    | x == 7 = if (getColor (board!!(y-1)!!(x-1))==0 ) then [(y-1,x-1)] else [] -- also edge of board
+    | (getColor (board!!(y-1)!!(x-1))==0 && getColor (board!!(y-1)!!(x+1))==0) = [(y-1,x-1),(y-1,x+1)] 
+    | getColor (board!!(y-1)!!(x-1))==0 = [(y-1,x-1)]
+    | getColor (board!!(y-1)!!(x+1))==0 = [(y-1,x+1)]
+    | otherwise = []
+-- Knight
+knightMoves :: [(Int,Int)]
+knightMoves = [(2,1),(2,-1),(-2,1),(-2,-1),(-1,2),(-1,-2),(1,-2),(1,2)]
+kingMoves :: [(Int,Int)] 
+kingMoves = delete (0,0) [(x,y)|x <- [-1..1], y <- [-1..1]] -- all combinations of a 3x3 except for staying still
+bishopMoves :: [(Int,Int)]
+bishopMoves = [(1,1),(1,-1),(-1,1),(-1,-1)]
+rookMoves :: [(Int,Int)]
+rookMoves = [(1,0),(-1,0),(0,1),(0,-1)]
+queenMoves :: [(Int,Int)]
+queenMoves = bishopMoves++rookMoves
+-- HELPER FOR ALL PIECES
+addCoords y x (y1,x1) = (y1+y,x1+x)
+removeBounds (y,x) = if (y < 0 || x < 0 || y > 7 || x > 7) then False else True
+mapMoves y x moves = filter removeBounds (nub(map (addCoords y x) moves))   
+mapAccountForFriendly y x moves (Initiate board) c = filter (\(y,x) -> getColor(board!!(y)!!(x))/= c) (mapMoves y x moves)
+-- y x is coordinate of unit, (y0,x0) is the movement (1,0) is up, (0,1) is right, returns a list of moves
+-- recursively checks the direction until you hit a piece/border
+checkCollision y x (Initiate board) c (y0,x0) 
+    | ((y+y0) < 0 || (x+x0) < 0 || (y+y0) > 7 || (x+x0) > 7) = []
+    | (getColor (board!!(y+y0)!!(x+x0)))== c = []
+    | (getColor (board!!(y+y0)!!(x+x0)))== 3 = (y0+y,x0+x):checkCollision (y+y0) (x+x0) (Initiate board) c (y0,x0)
+    | otherwise = [(y0+y,x0+x)]
+moveCollision y x (Initiate board) moves (Create _ c) = nub (concat(map (checkCollision y x (Initiate board) c) moves ))
 -- Main game (for white player)
-play2 (Initiate board) 'w' = 
+play2 (Initiate board) 0 = 
     do
       putStrLn (show (Initiate board))
       putStrLn "Enter Player 1 Piece location"
-      lin <- getLine
-      let ans = fixdel lin
-      let char = extractChar ans --Will be represented by 0-7
-      let num = extractNum ans --Will be represented by 0-7
-      if (((((char >=0) && (char <= 7)) && (num >=0)) && (num <= 7)) && board!!num!!char /= Empty && getColor(board!!num!!char) /= 1) 
-        then do 
-            putStrLn "Enter Player 1 movement location"
-            lin1 <- getLine
-            let ans1 = fixdel lin1
-            let char1 = extractChar ans1
-            let num1 = extractNum ans1
-            if ((((char >=0) && (char <= 7)) && (num1 >=0)) && (num1 <= 7)) 
-                then do
-                    let nextTurn = Initiate(move board char num char1 num1 )
-                    putStrLn (show(nextTurn))
-                    play2 (nextTurn) 'b'
-				    --playDev 0 (melody2)
-                else do
-                    putStrLn "Invalid Move"
-                    play2 (Initiate board) 'w'
-        else do
-            putStrLn "Not a valid piece, must be of form 'a1' and be a white piece"
-            play2 (Initiate board) 'w'
+      ans <- getLine
+      if ((length ans) <2) then do
+          putStrLn "Not a valid piece, must be of form 'a1' and be a white piece"
+          play2 (Initiate board) 0
+      else do
+          let x = extractChar ans --Will be represented by 0-7
+          let y = extractNum ans --Will be represented by 0-7
+          if (x >=0 && x <= 7 && y >=0 && y <= 7 && board!!y!!x /= Empty && getColor(board!!y!!x) /= 1 ) 
+            then do 
+                putStrLn "Enter Player 1 movement location"
+                ans1 <- getLine
+                let x1 = extractChar ans1
+                let y1 = extractNum ans1
+                if (x1 >=0 && x1 <= 7 && y1 >=0 && y1 <= 7 && (existsIn y x y1 x1 (Initiate board))) 
+                    then do
+                        let nextTurn = Initiate(move board x y x1 y1)
+                        if (checkKing nextTurn 1)
+                        then do
+                            play moveMusic
+                            play2 (nextTurn) 1
+                        else do 
+                            play musicEnding
+                            return "White Wins"
+                    else do
+                        putStrLn "Invalid Move, valid moves are :"
+                        putStrLn (show (nub(checkViableMoves (Initiate board) [] (board!!(y)!!(x)) y x)))
+                        play2 (Initiate board) 0
+            else do
+                putStrLn "Not a valid piece, must be of form 'a1' and be a white piece"
+                play2 (Initiate board) 0
 -- (Main game for black player)
-play2 (Initiate board) 'b' = 
+play2 (Initiate board) 1 = 
     do
       putStrLn (show (Initiate board))
       putStrLn "Enter Player 2 Piece location"
-      lin <- getLine
-      let ans = fixdel lin
-      let char = extractChar ans --Will be represented by 0-7
-      let num = extractNum ans --Will be represented by 0-7
-      if (((((char >=0) && (char <= 7)) && (num >=0)) && (num <= 7)) && board!!num!!char /= Empty && getColor(board!!num!!char) /= 0) 
-        then do 
-            putStrLn "Enter Player 2 movement location"
-            lin1 <- getLine
-            let ans1 = fixdel lin1
-            let char1 = extractChar ans1
-            let num1 = extractNum ans1
-            if ((((char >=0) && (char <= 7)) && (num1 >=0)) && (num1 <= 7)) 
-                then do
-                    let nextTurn = Initiate(move board char num char1 num1 )
-                    putStrLn (show(nextTurn))
-                    play2 (nextTurn) 'w'
-                else do
-                    putStrLn "Invalid Move"
-                    play2 (Initiate board) 'b'
-        else do
-            putStrLn "Not a valid piece, must be of form 'a1' and be a black piece"
-            play2 (Initiate board) 'b'
-go = do play melody
-        do play2 initial 'w'
+      ans <- getLine
+      if ((length ans) <2) then do
+          putStrLn "Not a valid piece, must be of form 'a1' and be a black piece"
+          play2 (Initiate board) 1
+      else do 
+          let x = extractChar ans --Will be represented by 0-7
+          let y = extractNum ans --Will be represented by 0-7
+          if (x >=0 && x <= 7 && y >=0 && y <= 7 && board!!y!!x /= Empty && getColor(board!!y!!x) /= 0)
+            then do 
+                putStrLn "Enter Player 2 movement location"
+                ans1 <- getLine
+                let x1 = extractChar ans1
+                let y1 = extractNum ans1
+                if (x1 >=0 && x1 <= 7 && y1 >=0 && y1 <= 7 && (existsIn y x y1 x1 (Initiate board))) 
+                    then do
+                        let nextTurn = Initiate(move board x y x1 y1 )
+                        if (checkKing nextTurn 0)
+                        then do
+                            play moveMusic
+                            play2 (nextTurn) 0
+                        else do 
+                            play musicEnding
+                            return "Black Wins"
+                    else do
+                        putStrLn "Invalid Move, valid moves are :"
+                        putStrLn (show (nub(checkViableMoves (Initiate board) [] (board!!(y)!!(x)) y x)))
+                        play2 (Initiate board) 1
+            else do
+                putStrLn "Not a valid piece, must be of form 'a1' and be a black piece"
+                play2 (Initiate board) 1
+go = do
+    play melody
+    (play2 initial 0)
 
---main :: IO()
---main = do playDev 0 
-          
---main :: IO ()
---main = do
---    putStrLn "Enter yes to play the game and no to exit"
---    do
---        line1 <- getLine                                
---        do 
---	      if (line1 == "yes")
---		    then play melody
---		  else putStrLn "goodbye"
-
-main2 :: IO ()
-main2 = do
-    putStrLn "Welcome to our Chess Game"
-    putStrLn "Would you like to start the game? please Enter yes to start and no to Exit"
-    do
-        line1 <- getLine                                -- line1 :: String
-        do 
-	      if (line1 == "yes")
-		    then go     
-		  else
-		     do putStrLn "Game has ended"
-		        play muscEnd
          
        

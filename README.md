@@ -3,7 +3,7 @@ chessMain is one without audio built in, chessP has audio
 
 # ♟️ Haskell Chess Engine
 
-A functional, terminal-based chess game written in **Haskell**, featuring complete rule logic for standard chess pieces and basic turn-based play between two players or Player vs AI. 
+A functional, terminal-based chess game written in **Haskell**, featuring complete rule logic for standard chess pieces and basic turn-based play between two players. 
 
 This engine simulates a chessboard, enforces movement rules (including captures, check detection, and piece restrictions), and allows players to interact via terminal input in algebraic coordinates (e.g., `e2`, `g8`).
 

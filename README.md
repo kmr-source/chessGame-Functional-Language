@@ -10,9 +10,13 @@ This engine simulates a chessboard, enforces movement rules (including captures,
 What libraries are we going to use?
 
 Euterpea library : http://euterpea.com/
+
 Euterpea Library works best on Haskell platform 8.6.5  && cabal version <3.1
+
 Instructions with for cabal > 3.1
+
 cabal v1-update
+
 cabal v1- install Euterpea
 
 *******************Warning* if above does not work it may be best to reinstall Haskel Platform 8.6.5***********************
